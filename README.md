@@ -1,81 +1,133 @@
-## Google ADK Math Demo
+## Google ADK Demo Agents
 
-This repository demonstrates how to orchestrate a lightweight, multi-agent workflow using the [Google Agentic Development Kit (ADK)](https://github.com/google/adk-python) with OpenAI models.
+This project showcases a small fleet of [Google Agentic Development Kit (ADK)](https://github.com/google/adk-python) agents powered by OpenAI via LiteLLM:
 
-- **Orchestrator agent** – inspects each user request, decides when to involve specialists, and stitches the final response together.
-- **Math agent** – calls a deterministic Python tool (`compute_basic_math`) to solve full arithmetic expressions (with multiple operations and parentheses).
-- **Poetry agent** – turns the math journey into a short poem that references the number of operations performed.
-- **Synthesizer agent** – reads the math/poetry outputs and crafts the final human-friendly response.
+- **Math specialist** – rewrites arithmetic into a deterministic Python tool call and walks through the computation.
+- **Poetry specialist** – celebrates the math result in verse when creativity is requested.
+- **Synthesizer** – assembles the final human-facing answer.
+- **Reasoning orchestrator** – decides which specialists or tools to involve.
+- **OCR transcriber** – extracts text from uploaded images and formats a clean transcription.
 
-### Quick start
+These agents are available both as a CLI demo and in the ADK web UI.
+
+---
+
+## Prerequisites
+
+- macOS (tested) with `zsh`
+- Python 3.12+
+- [uv](https://github.com/astral-sh/uv) for dependency management
+- OpenAI API key with access to GPT-4 family models (the defaults target `gpt-4o-mini`)
+
+If you operate behind an TLS-intercepting proxy, export the relevant CA bundle (or set `litellm.ssl_verify = False` only if required in controlled environments).
+
+---
+
+## Installation
+
+Clone the repo and install dependencies using uv:
 
 ```bash
-uv run python main.py "What is 12 / 3 + 4?"
+git clone https://github.com/txnguyen292/google_adk_demo.git
+cd google_adk_demo
+uv sync
 ```
 
-> **Note:** If you run into OpenAI authentication errors, export `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`) in your shell first.
+The project installs as an editable package (`google-adk-test==0.1.0`). The `uv sync` command also prepares a `.venv` in the repository root; activate it when running commands manually:
 
-Set the following environment variables before running:
+```bash
+source .venv/bin/activate
+```
+
+---
+
+## Configuration
+
+Set these environment variables before calling any agents (either export them in your shell or place them in a `.env` file; the repo uses `python-dotenv` in notebooks and agents for convenience):
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | Authenticates calls made through ADK’s LiteLLM integration. | – |
-| `OPENAI_MODEL` | Model identifier passed to LiteLLM. | `gpt-4o-mini` |
-| `OPENAI_TEMPERATURE` | Optional generation temperature for both agents. | `0.2` |
+| `OPENAI_API_KEY` | API key passed to LiteLLM/OpenAI | required |
+| `OPENAI_MODEL` | Model name for all agents | `gpt-4o-mini` |
+| `OPENAI_TEMPERATURE` | Base sampling temperature | `0.2` |
 
-### Project layout
+Example (macOS/zsh):
+
+```bash
+export OPENAI_API_KEY="sk-your-key"
+export OPENAI_MODEL="gpt-4o-mini"
+```
+
+Or create a `.env` in the project root:
+
+```
+OPENAI_API_KEY=sk-your-key
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TEMPERATURE=0.2
+```
+
+The ADK apps and notebooks load `.env` automatically if present.
+
+The demo also sets `litellm.ssl_verify = False` during configuration so requests succeed in restrictive corporate networks. If you import the proxy’s root CA instead, remove that override in `google_adk_test/settings.py` for better security.
+
+---
+
+## Command-Line Demo
+
+Run the orchestrator on a single prompt:
+
+```bash
+uv run python main.py "What is (12 + 4) / 2?"
+```
+
+You will see streamed events from each agent, including tool calls and final summaries. Non-math requests are gracefully declined.
+
+---
+
+## ADK Web Apps
+
+Launch the built-in ADK UI and choose the desired app from the dropdown:
+
+```bash
+uv run adk web agents
+```
+
+The following app names are registered:
+
+| App | What it does |
+| --- | --- |
+| `math_orchestrator` | Deterministic math → poetry → synthesizer pipeline. |
+| `reasoning_tool_orchestrator` | LLM-controlled reasoning flow that invokes math/poetry as tools and hands off to the synthesizer. |
+| `ocr_transcriber` | OCR agent that reuses the latest uploaded image and returns the detected text + notes. |
+
+**OCR tips:** Upload an image (PNG/JPEG) and optionally add textual instructions in the same turn. The agent stores the most recent image in session state, so follow-up messages can reference it without re-uploading.
+
+---
+
+## Notebook Usage
+
+`notebooks/test.ipynb` demonstrates direct OpenAI calls with custom TLS settings and LiteLLM usage (`litellm.ssl_verify = False`). Run it inside the project’s virtualenv to reuse installed dependencies.
+
+---
+
+## Project Layout
 
 | Path | Description |
 | --- | --- |
-| `google_adk_test/agents/` | Individual agent factories (math, poetry, orchestrator). |
-| `google_adk_test/registry.py` | Assembles the orchestrator with its specialists. |
-| `google_adk_test/tools.py` | Deterministic arithmetic tool exposed to the LLM. |
-| `google_adk_test/settings.py` | Reads OpenAI configuration from the environment. |
-| `main.py` | CLI runner that spins up the ADK `Runner` and streams responses. |
-| `project_specs/initial_requirements.md` | Implementation guidelines for the demo. |
+| `main.py` | Minimal CLI entry point for the orchestrator demo. |
+| `google_adk_test/settings.py` | Loads OpenAI configuration and toggles LiteLLM TLS handling. |
+| `google_adk_test/agents/` | Specialist factories (math, poetry, synthesizer, OCR). |
+| `google_adk_test/agents/tool_wrappers.py` | Wraps agents as tools for orchestrators. |
+| `google_adk_test/registry.py` | Builds orchestrators and exposes the OCR agent builder. |
+| `agents/*/agent.py` | Web-app entry points loaded by `adk web agents`. |
+| `project_specs/initial_requirements.md` | Original requirements used to scope the demo. |
 
-### Example
+---
 
-```
-$ uv run python main.py "Compute (5 + 7) * 3 / 2"
-[orchestrator] I’ll ask our math specialist to evaluate: (5 + 7) * 3 / 2
-[tool-call] compute_basic_math({'expression': '(5 + 7) * 3 / 2'})
-[tool-response] compute_basic_math: {'expression': '(5 + 7) * 3 / 2', 'result': 18.0, 'operations_count': 3, 'steps': ['5 = 5.0', '7 = 7.0', '5 + 7 = 12.0', '3 = 3.0', '(5 + 7) * 3 = 36.0', '2 = 2.0', '((5 + 7) * 3) ÷ 2 = 18.0']}
-[math_agent] Expression: (5 + 7) * 3 / 2  
- - Step 1: 5 + 7 = 12.0  
- - Step 2: 12.0 × 3 = 36.0  
- - Step 3: 36.0 ÷ 2 = 18.0  
-Result: 18.0 (3 operations)  
-[poetry_agent] In three swift turns the numbers spun,  
-Twelve embraced three—now eighteen won.  
-Steps entwined like rhythmic art,  
-Math’s small waltz now warms the heart.
-[orchestrator] Summary: the calculation evaluates to 18.0 using 3 operations. Enjoy the poem above!
-```
+## Extending the Demo
 
-For non-math questions:
+- Add new specialists by following the pattern in `google_adk_test/agents/` and register them in `google_adk_test/registry.py`.
+- Attach tools via `google_adk_test/agents/tool_wrappers.py` to expose existing agents as callable functions.
+- Update `agents/<app>/agent.py` (or create new folders) to surface additional workflows in the ADK web UI.
 
-```
-$ uv run python main.py "Write me a poem"
-[orchestrator] I can only help with addition, subtraction, multiplication, or division problems.
-```
-
-### ADK Web UI
-
-Once your environment variables are in place, you can explore the same agents through the built-in web experience:
-
-```bash
-uv run adk web agents/math_orchestrator          # deterministic math → poetry pipeline
-uv run adk web agents/reasoning_tool_orchestrator # LLM orchestrator that calls specialists as tools
-```
-
-Open the provided URL in a browser to interact with the orchestrator visually.
-
-### Available workflows
-
-| App | Description | When to use |
-| --- | --- | --- |
-| `math_orchestrator` | Sequential pipeline: math → poetry → synthesizer (poetry politely declines if not requested, synthesizer always produces the final response). | Deterministic demos or regression tests. |
-| `reasoning_tool_orchestrator` | LLM orchestrator that uses math/poetry as tools and always transfers to the synthesizer agent for the final user-facing response. | Showcases dynamic routing and tool use. |
-
-Feel free to extend the toolset or add more specialist agents (percentages, unit conversion, etc.) by following the pattern in `google_adk_test/agents.py`.
+Feel free to experiment—the ADK stack makes it straightforward to sequence or orchestrate new agent behaviors around LiteLLM-compatible models.
