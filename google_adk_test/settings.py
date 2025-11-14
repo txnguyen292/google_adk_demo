@@ -3,10 +3,10 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+import litellm
 
 DEFAULT_MODEL = "gpt-4o-mini"
 DEFAULT_TEMPERATURE = 0.2
-
 
 @dataclass(slots=True)
 class OpenAIConfig:
@@ -41,3 +41,5 @@ class OpenAIConfig:
         """Ensure downstream libraries see the OpenAI credentials."""
         os.environ.setdefault("OPENAI_API_KEY", self.api_key)
         os.environ.setdefault("OPENAI_MODEL", self.model)
+        # Disable TLS verification for LiteLLM to match local notebook usage.
+        litellm.ssl_verify = False

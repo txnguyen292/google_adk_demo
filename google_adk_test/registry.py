@@ -5,10 +5,12 @@ from textwrap import dedent
 from google.adk import Agent
 from google.adk.models.lite_llm import LiteLlm
 
+
 from google_adk_test.agents import (
     build_math_agent,
     build_orchestrator,
     build_poetry_agent,
+    build_ocr_specialist,
     build_synthesizer_agent,
     build_math_tool_agent,
     build_poetry_tool_agent,
@@ -60,6 +62,16 @@ def build_reasoning_tool_orchestrator(config: OpenAIConfig) -> Agent:
         ).strip(),
         tools=[math_tool, poetry_tool],
         sub_agents=[synth_agent],
-        model=LiteLlm(model=config.model, temperature=config.temperature),
+        model=LiteLlm(
+            model=config.model,
+            temperature=config.temperature,
+            http_client=None,
+        ),
         disallow_transfer_to_parent=True,
     )
+
+
+def build_ocr_agent(config: OpenAIConfig) -> Agent:
+    """Construct the standalone OCR agent."""
+    config.apply()
+    return build_ocr_specialist(config)
