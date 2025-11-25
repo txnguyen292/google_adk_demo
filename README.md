@@ -124,6 +124,25 @@ The following app names are registered:
 
 ---
 
+## Visualizing Agent Traces
+
+The `scripts/tracing_demo.py` helper runs the math orchestrator once and emits a Graphviz DOT trace to `traces/capital_trace.dot`.
+
+Render it with Graphviz:
+
+```bash
+# Install Graphviz if needed (macOS): brew install graphviz
+dot -Tpng traces/capital_trace.dot -o traces/capital_trace.png
+# Or SVG for browser viewing:
+dot -Tsvg traces/capital_trace.dot -o traces/capital_trace.svg
+```
+
+Open the generated `traces/capital_trace.png` (or `.svg`) to see the call graph. Re-run `scripts/tracing_demo.py` to regenerate the DOT before rendering again.
+
+If you prefer a minimal web viewer, serve the SVG with any static file server (e.g., `python -m http.server` in the repo root) and open it in a browser.
+
+---
+
 ## Extending the Demo
 
 - Add new specialists by following the pattern in `google_adk_test/agents/` and register them in `google_adk_test/registry.py`.
