@@ -1,0 +1,18 @@
+strict digraph {
+	graph [bgcolor="#333537" rankdir=LR]
+	math_agent -> poetry_agent [color="#cccccc"]
+	poetry_agent -> synthesizer_agent [color="#cccccc"]
+	subgraph "cluster_math_poetry_pipeline (Sequential Agent)" {
+		math_agent [label="🤖 math_agent" color="#cccccc" fontcolor="#cccccc" shape=ellipse style=rounded]
+		compute_basic_math [label="🔧 compute_basic_math" color="#cccccc" fontcolor="#cccccc" shape=box style=rounded]
+		math_agent -> compute_basic_math [arrowhead=none color="#cccccc"]
+		poetry_agent [label="🤖 poetry_agent" color="#cccccc" fontcolor="#cccccc" shape=ellipse style=rounded]
+		synthesizer_agent [label="🤖 synthesizer_agent" color="#cccccc" fontcolor="#cccccc" shape=ellipse style=rounded]
+		color="#ffffff" fontcolor="#cccccc" label="math_poetry_pipeline (Sequential Agent)" style=rounded
+	}
+	math_agent [label="🤖 math_agent" color="#cccccc" fontcolor="#cccccc" shape=ellipse style=rounded]
+	compute_basic_math [label="🔧 compute_basic_math" color="#cccccc" fontcolor="#cccccc" shape=box style=rounded]
+	math_agent -> compute_basic_math [arrowhead=none color="#cccccc"]
+	poetry_agent [label="🤖 poetry_agent" color="#cccccc" fontcolor="#cccccc" shape=ellipse style=rounded]
+	synthesizer_agent [label="🤖 synthesizer_agent" color="#cccccc" fontcolor="#cccccc" shape=ellipse style=rounded]
+}
