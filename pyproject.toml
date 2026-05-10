@@ -5,9 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "google-adk>=1.17.0",
+    "google-adk>=1.28.1",
     "ipykernel>=7.1.0",
-    "litellm>=1.78.7",
+    "litellm>=1.83.7",
     "loguru>=0.7.3",
     "rich>=14.2.0",
     "typer>=0.20.0",
